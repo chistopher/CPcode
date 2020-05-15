@@ -31,7 +31,7 @@ struct SegmentTree {
 // segment tree adapted from https://www.geeksforgeeks.org/segment-tree-set-1-sum-of-given-range
 using T = int;
 const T NEUTRAL = 0;
-T combine(T a, T) { return a + b; }
+T combine(T a, T b) { return a + b; }
 T init(int a) { return T(a); }
 // tree.resize(4*n, 0);
 // construct(0,0,n,arr);

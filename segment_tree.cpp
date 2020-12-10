@@ -1,31 +1,20 @@
 
 // iterative version from https://codeforces.com/blog/entry/18051
 struct SegmentTree {
-    explicit SegmentTree(vector<int>& arr) {
-        m_n = arr.size();
-        m_tree.resize(2*m_n, 0);
-        // construct base values
-        for (int i = 0; i < m_n; ++i)
-            m_tree[m_n + i] = arr[i];
-        //build tree
-        for (int i = m_n - 1; i > 0; --i) m_tree[i] = m_tree[i<<1] + m_tree[i<<1|1];
+    int n;
+    vector<int> tree;
+    explicit SegmentTree(int n_) : n(n_), tree(2*n) { }
+    void add(int p, int value) {  // set value at position p
+        for (tree[p += n] += value; p > 1; p >>= 1) tree[p>>1] = tree[p] + tree[p^1];
     }
-
-    void modify(int p, int value) {  // set value at position p
-        for (m_tree[p += m_n] = value; p > 1; p >>= 1) m_tree[p>>1] = m_tree[p] + m_tree[p^1];
-    }
-
     int query(int l, int r) {  // sum on interval [l, r)
         int res = 0;
-        for (l += m_n, r += m_n; l < r; l >>= 1, r >>= 1) {
-            if (l&1) res += m_tree[l++];
-            if (r&1) res += m_tree[--r];
+        for (l += n, r += n; l < r; l >>= 1, r >>= 1) {
+            if (l&1) res += tree[l++];
+            if (r&1) res += tree[--r];
         }
         return res;
     }
-
-    int m_n;
-    vector<int> m_tree;
 };
 
 // segment tree adapted from https://www.geeksforgeeks.org/segment-tree-set-1-sum-of-given-range
@@ -114,4 +103,46 @@ struct SegmentTree2D {
                 inner_query(vo,2*vi+1,li,(li+ri)/2,qli,qri),
                 inner_query(vo,2*vi+2,(li+ri)/2,ri,qli,qri));
     }
+};
+
+// lazy propagation
+struct Seg {
+    using T = int;
+    const T NEUTRAL = 0;
+    auto combine(T a, T b) { return a+b; }
+
+    vector<T> seg; // sum of interval for all nodes in segment tree
+    vector<int> lazy; // exclusive lazy
+    int m_n;
+    Seg(int n) : seg(4*n), lazy(4*n), m_n(n) {};
+    void push(int idx, int l, int r) {
+        if((r-l)<1 || !lazy[idx]) return;
+        seg[idx] += lazy[idx]*(r-l);
+        if(r-l>1) {
+            lazy[2*idx+1] += lazy[idx];
+            lazy[2*idx+2] += lazy[idx];
+        }
+        lazy[idx] = 0;
+    }
+    T update(int idx, int l, int r, int index, T value) {
+        push(idx,l,r);
+        if (index < l || r <= index) return seg[idx]; // index outside node segment
+        if (r-l==1) return seg[idx] = value; // leaf
+        return seg[idx] = combine(update(2*idx+1,l,(l+r)/2,index,value), update(2*idx+2,(l+r)/2,r,index,value));
+    }
+    T update(int index, T value) { return update(0,0,m_n,index,value); }
+    T query(int idx, int l, int r, int ql, int qr) {
+        push(idx,l,r);
+        if (qr <= l || r <= ql) return NEUTRAL; // node outside of range
+        if (ql <= l && r <= qr) return seg[idx]; // node fully in range
+        return combine(query(2*idx+1,l,(l+r)/2,ql,qr), query(2*idx+2,(l+r)/2,r,ql,qr));
+    }
+    T query(int ql, int qr) { return query(0,0,m_n,ql,qr); }
+    T range_update(int idx, int l, int r, int ql, int qr, T add) {
+        push(idx,l,r);
+        if (qr <= l || r <= ql) return seg[idx];
+        if (ql <= l && r <= qr) { lazy[idx] = add; push(idx,l,r); return seg[idx]; }
+        return seg[idx] = combine(range_update(2*idx+1,l,(l+r)/2,ql,qr,add), range_update(2*idx+2,(l+r)/2,r,ql,qr,add));
+    }
+    T range_update(int ql, int qr, T add) { return range_update(0,0,m_n,ql,qr,add); }
 };

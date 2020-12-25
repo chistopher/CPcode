@@ -18,3 +18,16 @@ ll totient(ll n) {
     return ans;
 }
 
+// factor all numbers <= N in O(N)
+auto sieve(int N) {
+    vector<ll> lowest(N+1, 0), primes;
+    for (int i=2; i<=N; ++i) {
+        if (lowest[i] == 0)
+            lowest[i]=i, primes.push_back(i);
+        for(auto p : primes) {
+            if(p>lowest[i] || i*p>N) break;
+            lowest[i * p] = p;
+        }
+    }
+    return pair(lowest, primes);
+}

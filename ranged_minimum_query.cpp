@@ -14,15 +14,16 @@ auto query = [&rmq, &ilog](int l, int r) { // exclusive query
 };
 
 
-// RMQ query object generator :)
-auto createRMQ = [](int n, auto init, auto combine) { // returns an exclusive query lambda
-    vector rmq(ilog(n)+1, vector(n, init(0)));
+template<class F1, class F2>
+auto createRMQ(int n, F1 init, F2 combine) { // returns an exclusive query lambda
+    int log_n = 31 - __builtin_clz(n);
+    vector rmq(log_n+1, vector(n, init(0)));
     for (int i = 1; i < n; ++i) rmq[0][i] = init(i); // init bottom level
-    for (int k = 1; k <= ilog(n); k++)
+    for (int k = 1; k <= log_n; k++)
         for (int i = 0; i + (1 << k) <= n; i++)
             rmq[k][i] = combine(rmq[k-1][i], rmq[k-1][i + (1 << (k-1))]);
     return [rmq=move(rmq), combine](int l, int r) mutable { // mutable s.t. combine can take non-const args
-        auto log = ilog(r-l);
+        auto log = 31 - __builtin_clz(r-l);
         return combine(rmq[log][l], rmq[log][r - (1 << log)]);
     };
 };

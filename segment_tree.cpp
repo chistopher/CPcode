@@ -105,44 +105,47 @@ struct SegmentTree2D {
     }
 };
 
+
 // lazy propagation
 struct Seg {
-    using T = int;
+    using T = int; // data type
+    using L = int; // lazy type
     const T NEUTRAL = 0;
     auto combine(T a, T b) { return a+b; }
 
     vector<T> seg; // sum of interval for all nodes in segment tree
-    vector<int> lazy; // exclusive lazy
+    vector<L> lazy; // exclusive lazy
     int m_n;
     Seg(int n) : seg(4*n), lazy(4*n), m_n(n) {};
+    T apply(int idx, int l, int r, L lazy) {
+        lazy[idx] += lazy;
+        return seg[idx] += (r-l)*lazy;
+    }
     void push(int idx, int l, int r) {
-        if((r-l)<1 || !lazy[idx]) return;
-        seg[idx] += lazy[idx]*(r-l);
-        if(r-l>1) {
-            lazy[2*idx+1] += lazy[idx];
-            lazy[2*idx+2] += lazy[idx];
-        }
+        int m = (r+l)/2;
+        if(m-l) apply(2*idx+1, l, m, lazy[idx]);
+        if(r-m) apply(2*idx+2, m, r, lazy[idx]);
         lazy[idx] = 0;
     }
     T update(int idx, int l, int r, int index, T value) {
-        push(idx,l,r);
         if (index < l || r <= index) return seg[idx]; // index outside node segment
         if (r-l==1) return seg[idx] = value; // leaf
+        push(idx,l,r);
         return seg[idx] = combine(update(2*idx+1,l,(l+r)/2,index,value), update(2*idx+2,(l+r)/2,r,index,value));
     }
     T update(int index, T value) { return update(0,0,m_n,index,value); }
     T query(int idx, int l, int r, int ql, int qr) {
-        push(idx,l,r);
         if (qr <= l || r <= ql) return NEUTRAL; // node outside of range
         if (ql <= l && r <= qr) return seg[idx]; // node fully in range
+        push(idx,l,r);
         return combine(query(2*idx+1,l,(l+r)/2,ql,qr), query(2*idx+2,(l+r)/2,r,ql,qr));
     }
     T query(int ql, int qr) { return query(0,0,m_n,ql,qr); }
-    T range_update(int idx, int l, int r, int ql, int qr, T add) {
-        push(idx,l,r);
+    T range_update(int idx, int l, int r, int ql, int qr, L lazy) {
         if (qr <= l || r <= ql) return seg[idx];
-        if (ql <= l && r <= qr) { lazy[idx] = add; push(idx,l,r); return seg[idx]; }
-        return seg[idx] = combine(range_update(2*idx+1,l,(l+r)/2,ql,qr,add), range_update(2*idx+2,(l+r)/2,r,ql,qr,add));
+        if (ql <= l && r <= qr) return apply(idx,l,r,lazy);
+        push(idx,l,r);
+        return seg[idx] = combine(range_update(2*idx+1,l,(l+r)/2,ql,qr,lazy), range_update(2*idx+2,(l+r)/2,r,ql,qr,lazy));
     }
-    T range_update(int ql, int qr, T add) { return range_update(0,0,m_n,ql,qr,add); }
+    T range_update(int ql, int qr, L lazy) { return range_update(0,0,m_n,ql,qr,lazy); }
 };

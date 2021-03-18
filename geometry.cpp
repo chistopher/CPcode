@@ -12,4 +12,4 @@ auto cross(Point a, Point b) { return a.x*b.y - a.y*b.x; }
 auto abs(Point a) { return sqrt(dot(a,a)); }
 auto proj(Point a, Point b) { return dot(a,b) / abs(b); }
 auto distPointLine(Point a, Point s, Point d) { return fabs(cross(d,a-s) / abs(d)); }
-auto lineIntersection(Point s1, Point d1, Point s2, Point d2) { return s1 + d1 * (cross(d2,s2-s1) / cross(d1,d2)); } // assumes lines not parallel
+auto lineIntersection(Point s1, Point d1, Point s2, Point d2) { return s1 + d1 * (cross(s2-s1,d2) / cross(d1,d2)); } // assumes lines not parallel
